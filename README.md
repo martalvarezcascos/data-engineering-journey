@@ -2,7 +2,7 @@
 
 Hands-on exercises and projects covering the core skills of modern Data Engineering.
 
-## Current focus
+## Current Focus
 
 - Advanced SQL
 - Python for data pipelines
