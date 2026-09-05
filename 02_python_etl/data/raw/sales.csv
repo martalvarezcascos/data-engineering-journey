@@ -1,0 +1,9 @@
+order_id,customer_id,product,quantity,unit_price,country
+1001,C001,Laptop Stand,1,45.00,Spain
+1002,C002,Keyboard,2,35.50,France
+1003,C003,Mouse,1,20.00,Spain
+1004,C001,Monitor,2,180.00,Spain
+1005,C004,Keyboard,1,35.50,Germany
+1006,C005,Mouse,3,20.00,France
+1007,C003,Laptop Stand,2,45.00,Spain
+1008,C006,Monitor,1,180.00,Germany
