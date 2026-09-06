@@ -1,0 +1,3 @@
+order_id,customer_id,product,quantity,country
+1001,C001,Laptop Stand,1,Spain
+1002,C002,Keyboard,2,France
