@@ -1,0 +1,8 @@
+country,category,number_of_orders,units_sold,total_revenue
+Germany,Monitors,2,3,540.0
+Spain,Accessories,6,11,425.0
+France,Monitors,2,2,360.0
+France,Accessories,3,5,211.0
+Spain,Monitors,1,1,180.0
+Portugal,Accessories,2,4,150.0
+Germany,Accessories,1,1,75.5

@@ -1,0 +1,28 @@
+order_id,customer_id,order_date,product,category,quantity,unit_price,country
+1001,C001,2026-08-01,Laptop Stand,Accessories,1,45.00,Spain
+1001,C001,2026-08-01,Wireless Mouse,Accessories,2,20.00,Spain
+1002,C002,2026-08-01,Mechanical Keyboard,Accessories,1,75.50,France
+1003,C003,2026/08/02,USB-C Hub,Accessories,1,35.00, spain 
+1004,C004,02-08-2026,Monitor 27,Monitors,2,180.00,Germany
+1005,C005,2026-08-03,Laptop Stand, accessories ,2,45.00,SPAIN
+1006,C006,2026-08-03,Webcam,Accessories,,60.00,France
+1007,,2026-08-04,Mechanical Keyboard,Accessories,1,75.50,Germany
+1008,C008,2026-08-04,Monitor 27,MONITORS,1,180.00,germany
+1009,C009,2026-08-05,Wireless Mouse,Accessories,3,20.00,France
+1010,C010,2026-08-05,USB-C Hub,Accessories,2,,Spain
+1011,C011,2026-08-06,Laptop Stand,Accessories,1,45.00,Portugal
+1012,C012,2026-08-06,Mechanical Keyboard,Accessories,0,75.50,Portugal
+1013,C013,2026-08-07,Webcam,Accessories,-1,60.00,Spain
+1014,C014,2026-08-07,Monitor 27,Monitors,1,180.00,France
+1015,C015,2026-08-08,Laptop Stand,Accessories,2,"45,00",Spain
+1016,C016,not_a_date,Wireless Mouse,Accessories,2,20.00,Germany
+1017,C017,2026-08-09,USB-C Hub,Accessories,two,35.00,France
+1018, C018 ,2026-08-09,  Webcam  ,Accessories,1,60.00,Spain
+1019,C019,2026-08-10,Monitor 27,Monitors,1,180.00,France
+1019,C019,2026-08-10,Monitor 27,Monitors,1,180.00,France
+1020,C020,2026-08-10,Laptop Stand,Accessories,1,45.00,Spain
+1020,C020,2026-08-10,Wireless Mouse,Accessories,1,20.00,Spain
+1021,C021,2026-08-11,Mechanical Keyboard,Accessories,1,75.50, France 
+1022,C022,2026-08-11,USB-C Hub,ACCESSORIES,3,35.00,Portugal
+1023,C023,2026-08-12,Webcam,Accessories,1,60.00,
+1024,C024,2026-08-12,Monitor 27,Monitors,1,180.00,Spain

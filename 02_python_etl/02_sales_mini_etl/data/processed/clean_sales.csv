@@ -1,0 +1,20 @@
+order_id,customer_id,order_date,product,category,quantity,unit_price,country,total_amount
+1001,C001,2026-01-08,Laptop Stand,Accessories,1,45.0,Spain,45.0
+1001,C001,2026-01-08,Wireless Mouse,Accessories,2,20.0,Spain,40.0
+1002,C002,2026-01-08,Mechanical Keyboard,Accessories,1,75.5,France,75.5
+1003,C003,2026-02-08,USB-C Hub,Accessories,1,35.0,Spain,35.0
+1004,C004,2026-08-02,Monitor 27,Monitors,2,180.0,Germany,360.0
+1005,C005,2026-03-08,Laptop Stand,Accessories,2,45.0,Spain,90.0
+1007,,2026-04-08,Mechanical Keyboard,Accessories,1,75.5,Germany,75.5
+1008,C008,2026-04-08,Monitor 27,Monitors,1,180.0,Germany,180.0
+1009,C009,2026-05-08,Wireless Mouse,Accessories,3,20.0,France,60.0
+1011,C011,2026-06-08,Laptop Stand,Accessories,1,45.0,Portugal,45.0
+1014,C014,2026-07-08,Monitor 27,Monitors,1,180.0,France,180.0
+1015,C015,2026-08-08,Laptop Stand,Accessories,2,45.0,Spain,90.0
+1018,C018,2026-09-08,Webcam,Accessories,1,60.0,Spain,60.0
+1019,C019,2026-10-08,Monitor 27,Monitors,1,180.0,France,180.0
+1020,C020,2026-10-08,Laptop Stand,Accessories,1,45.0,Spain,45.0
+1020,C020,2026-10-08,Wireless Mouse,Accessories,1,20.0,Spain,20.0
+1021,C021,2026-11-08,Mechanical Keyboard,Accessories,1,75.5,France,75.5
+1022,C022,2026-11-08,USB-C Hub,Accessories,3,35.0,Portugal,105.0
+1024,C024,2026-12-08,Monitor 27,Monitors,1,180.0,Spain,180.0
