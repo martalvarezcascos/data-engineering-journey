@@ -1,0 +1,11 @@
+product_key,product_id,product_name,category,brand
+1,P001,Basic T-Shirt,Clothing,Alpha
+2,P002,Running Shoes,Footwear,Sprint
+3,P003,Urban Backpack,Accessories,Urban
+4,P004,Classic Hoodie,Clothing,Alpha
+5,P005,Sports Socks,Footwear,Sprint
+6,P006,Canvas Cap,Accessories,Urban
+7,P007,Slim Jeans,Clothing,DenimCo
+8,P008,Leather Belt,Accessories,DenimCo
+9,P009,Training Shorts,Clothing,Sprint
+10,P010,Casual Sneakers,Footwear,Urban

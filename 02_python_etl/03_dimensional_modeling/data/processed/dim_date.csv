@@ -1,0 +1,11 @@
+date_key,full_date,day,month,month_name,quarter,year,day_of_week_num,day_of_week_name,is_weekend
+20260801,2026-08-01,1,8,August,3,2026,5,Saturday,True
+20260802,2026-08-02,2,8,August,3,2026,6,Sunday,True
+20260803,2026-08-03,3,8,August,3,2026,0,Monday,False
+20260804,2026-08-04,4,8,August,3,2026,1,Tuesday,False
+20260805,2026-08-05,5,8,August,3,2026,2,Wednesday,False
+20260806,2026-08-06,6,8,August,3,2026,3,Thursday,False
+20260807,2026-08-07,7,8,August,3,2026,4,Friday,False
+20260808,2026-08-08,8,8,August,3,2026,5,Saturday,True
+20260809,2026-08-09,9,8,August,3,2026,6,Sunday,True
+20260810,2026-08-10,10,8,August,3,2026,0,Monday,False
