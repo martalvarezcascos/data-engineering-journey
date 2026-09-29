@@ -1,89 +1,208 @@
 # Incremental ETL Reliability
 
-A hands-on Data Engineering project focused on persistence, transactional integrity, incremental loading, idempotency and automated data-quality testing using Python, PostgreSQL and Docker.
+Small Data Engineering project focused on building a reliable, modular and observable incremental ETL pipeline with Python, PostgreSQL and Docker.
 
-## Project goals
+The project evolves a basic incremental load into a pipeline that supports:
 
-This project explores how to build a reliable incremental pipeline that:
+- modular ETL architecture;
+- data validation;
+- staging and core layers;
+- deduplication;
+- PostgreSQL UPSERT;
+- protection against older versions;
+- idempotent reruns;
+- transactional rollback;
+- execution logging;
+- pipeline run metadata;
+- safe restartability;
+- automated testing with pytest.
 
-- persists data in PostgreSQL;
-- separates incoming data from validated core data;
-- enforces data integrity through database constraints;
-- processes new and updated records incrementally;
-- prevents older versions from overwriting newer data;
-- handles late-arriving records;
-- deduplicates multiple versions of the same business key;
-- remains safe when the same batch is processed repeatedly;
-- uses transactions to guarantee atomicity;
-- validates pipeline guarantees automatically with pytest.
+---
 
 ## Architecture
+
+The pipeline follows this flow:
 
 ```text
 CSV source
     ↓
-Python / pandas
+extract
+    ↓
+validate
     ↓
 staging.orders
     ↓
-deduplication and version selection
+deduplication
     ↓
 incremental UPSERT
     ↓
 core.orders
 ```
 
-PostgreSQL runs locally inside Docker and stores its database files in a persistent Docker volume.
+Operational metadata is stored separately:
 
-## Data grain
+```text
+control.pipeline_runs
+```
 
-The grain of `orders` is:
+Each execution receives a unique `run_id` and records its status and execution metadata.
 
-> One row represents one order line.
+---
 
-The business key is therefore:
+## Project Structure
+
+```text
+04_incremental_etl_reliability/
+│
+├── data/
+│
+├── sql/
+│   ├── 01_create_schemas.sql
+│   ├── 02_create_core_orders.sql
+│   ├── 03_load_core.sql
+│   └── 04_create_pipeline_runs.sql
+│
+├── src/
+│   ├── __init__.py
+│   ├── database.py
+│   ├── extract.py
+│   ├── transform.py
+│   ├── load.py
+│   ├── metadata.py
+│   └── main.py
+│
+├── tests/
+│
+├── .env.example
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Pipeline Modules
+
+### `extract.py`
+
+Reads the source CSV and returns a pandas DataFrame.
+
+The extraction logic is isolated from database and transformation logic.
+
+### `transform.py`
+
+Validates the incoming dataset before loading.
+
+The current validation checks that all required columns exist.
+
+### `load.py`
+
+Contains PostgreSQL loading logic.
+
+Main responsibilities:
+
+- truncate and load the current batch into `staging.orders`;
+- deduplicate records using `ROW_NUMBER()`;
+- apply the incremental load into `core.orders`;
+- use PostgreSQL `INSERT ... ON CONFLICT`;
+- update existing rows only when the incoming `updated_at` is newer.
+
+The business key used by the pipeline is:
 
 ```text
 (order_id, line_id)
 ```
 
-The same product can appear more than once within the same order, so `(order_id, product_id)` is not considered unique.
+### `metadata.py`
 
-## Staging and core
+Manages execution metadata stored in:
 
-### `staging.orders`
-
-Represents the current incoming batch.
-
-It is intentionally more permissive because it acts as the landing area for source data.
-
-### `core.orders`
-
-Represents the validated persistent state.
-
-Important constraints include:
-
-```sql
-PRIMARY KEY (order_id, line_id)
-
-CHECK (quantity > 0)
-
-CHECK (unit_price >= 0)
+```text
+control.pipeline_runs
 ```
 
-Required fields are also protected with `NOT NULL`.
+Each run stores:
 
-## Transactions
+- `run_id`;
+- `started_at`;
+- `finished_at`;
+- `status`;
+- `staged_rows`;
+- `affected_rows`;
+- `error_message`.
 
-Multi-step operations are executed atomically.
+Supported statuses:
 
-A batch is treated as one logical unit:
+```text
+RUNNING
+SUCCESS
+FAILED
+```
+
+### `main.py`
+
+Acts as the orchestration layer.
+
+It coordinates:
+
+```text
+extract
+→ validate
+→ load staging
+→ incremental UPSERT
+→ execution metadata
+```
+
+It also defines the transaction boundary for the data load.
+
+---
+
+## Incremental Load Logic
+
+The pipeline first loads the full incoming batch into `staging.orders`.
+
+Before loading into `core.orders`, records are deduplicated using:
+
+```sql
+ROW_NUMBER() OVER (
+    PARTITION BY order_id, line_id
+    ORDER BY updated_at DESC
+)
+```
+
+Only the latest version of each business key is used.
+
+The resulting rows are loaded with PostgreSQL UPSERT:
+
+```sql
+INSERT ...
+ON CONFLICT (order_id, line_id)
+DO UPDATE ...
+```
+
+Existing records are updated only when:
+
+```sql
+EXCLUDED.updated_at > core.orders.updated_at
+```
+
+This prevents older arriving versions from overwriting newer data already stored in `core`.
+
+---
+
+## Transactional Reliability
+
+The staging load and incremental UPSERT are executed inside the same PostgreSQL transaction.
+
+Conceptually:
 
 ```text
 BEGIN
-    operation 1
-    operation 2
-    operation 3
+
+TRUNCATE staging
+INSERT batch into staging
+UPSERT staging → core
+
 COMMIT
 ```
 
@@ -93,156 +212,205 @@ If any operation fails:
 ROLLBACK
 ```
 
-This prevents partially loaded batches from leaving the database in an inconsistent state.
+This prevents partial loads.
 
-Python transaction boundaries are managed using Psycopg transaction contexts.
+For example, if staging is successfully loaded but the UPSERT fails, the staging changes are also rolled back.
 
-## Incremental loading
-
-Each row contains an `updated_at` timestamp.
-
-Incoming rows are classified according to their business key and version:
-
-```text
-Key does not exist
-→ INSERT
-
-Key exists and incoming.updated_at > core.updated_at
-→ UPDATE
-
-Key exists and incoming.updated_at <= core.updated_at
-→ NO ACTION
-```
-
-`order_date` is not used to determine the latest version because old business events can still arrive or be modified later.
-
-## Deduplication
-
-A batch may contain multiple versions of the same business key.
-
-The latest version is selected using:
-
-```sql
-ROW_NUMBER() OVER (
-    PARTITION BY order_id, line_id
-    ORDER BY updated_at DESC
-)
-```
-
-Only `rn = 1` is passed to the incremental load.
-
-If two conflicting records have the same `updated_at`, an additional deterministic source sequence or version field would be required.
-
-## UPSERT
-
-PostgreSQL `INSERT ... ON CONFLICT DO UPDATE` is used to combine insert and update behavior.
-
-Updates are protected by:
-
-```sql
-WHERE EXCLUDED.updated_at > core.orders.updated_at
-```
-
-This prevents stale records from overwriting newer versions.
-
-UPSERT is used here because the project models a relatively small current-state table with a clear primary key. Other storage engines and larger analytical workloads may require different strategies.
+---
 
 ## Idempotency
 
-The pipeline is designed so that processing the same batch repeatedly does not change the final state after the first successful execution.
+The pipeline is designed to be safely rerun with the same input.
+
+If the same batch is processed again:
+
+- existing rows are not duplicated;
+- records with the same `updated_at` are not unnecessarily updated;
+- older versions cannot overwrite newer versions.
+
+Therefore, repeated execution of the same input produces the same final state in `core`.
+
+Execution metadata is not idempotent by design: each execution receives a new `run_id`.
+
+---
+
+## Restartability
+
+A failed pipeline run can be safely restarted from the beginning.
+
+The strategy relies on:
+
+```text
+transactional atomicity
++
+idempotent incremental loading
+```
+
+If a run fails:
+
+```text
+run A → FAILED
+```
+
+the cause can be corrected and the same batch can be executed again:
+
+```text
+run B → SUCCESS
+```
+
+without manually repairing staging or core tables.
+
+---
+
+## Logging
+
+The pipeline uses Python's `logging` module instead of `print()` for operational visibility.
+
+Logs include:
+
+- timestamps;
+- log level;
+- module name;
+- extracted row counts;
+- staged row counts;
+- affected UPSERT rows;
+- successful validation;
+- pipeline start and completion;
+- error tracebacks.
 
 Example:
 
 ```text
-First execution
-30 → 31 rows
-
-Same batch again
-31 → 31 rows
+INFO | src.extract   | Extracted 4 rows
+INFO | src.transform | Validation completed successfully
+INFO | src.load      | Loaded 4 rows into staging
+INFO | src.load      | UPSERT affected 3 rows
 ```
 
-This makes pipeline retries safe.
+Exceptions are logged using `logger.exception()` so that the full traceback is preserved.
 
-## Late-arriving data
+---
 
-A record can have an old `order_date` but still be new to the pipeline.
+## Data Processing Failures vs Metadata Failures
 
-For example:
+The pipeline distinguishes between two different failure scenarios.
+
+### ETL failure
+
+If extraction, validation or database loading fails:
 
 ```text
-order_date = 2026-08-30
-updated_at = 2026-09-19
+data transaction → ROLLBACK
+pipeline run      → FAILED
 ```
 
-If its business key does not yet exist, it is inserted normally.
+### Metadata failure after successful ETL
 
-This demonstrates why event date and ingestion/version timestamps serve different purposes.
-
-## Automated tests
-
-Pytest integration tests validate important pipeline invariants:
-
-- no duplicate `(order_id, line_id)` keys;
-- mandatory fields are not null;
-- business rules remain valid;
-- processing the same batch twice is idempotent;
-- older versions cannot overwrite newer data;
-- late-arriving new business keys are inserted correctly.
-
-Tests run against PostgreSQL but use transaction rollback so test data does not persist after execution.
-
-Run the suite with:
-
-```bash
-python -m pytest -v
-```
-
-## Technology
-
-- Python 3.11
-- pandas
-- Psycopg 3
-- PostgreSQL 17
-- Docker / Docker Compose
-- pytest
-
-## Running locally
-
-Create a local environment file based on:
+If the data transaction commits successfully but the final metadata update fails:
 
 ```text
-.env.example
+data              → successfully committed
+metadata          → may remain RUNNING
+logs              → metadata-specific error
 ```
 
-Start PostgreSQL:
+The pipeline does not incorrectly classify this scenario as a data-processing failure.
 
-```bash
+---
+
+## Database Layers
+
+The PostgreSQL database uses three schemas:
+
+### `staging`
+
+Temporary representation of the current incoming batch.
+
+### `core`
+
+Reliable persisted business data.
+
+### `control`
+
+Operational metadata about pipeline executions.
+
+---
+
+## Running the Pipeline
+
+Start the PostgreSQL container if required:
+
+```powershell
 docker compose up -d
 ```
 
-Install Python dependencies:
+Run the pipeline from the project root:
 
-```bash
-pip install -r requirements.txt
+```powershell
+python -m src.main
 ```
 
-Run tests:
+---
 
-```bash
-python -m pytest -v
+## Running Tests
+
+Run the full test suite:
+
+```powershell
+python -m pytest -q
 ```
 
-## Key learnings
+Current test suite:
 
-This project demonstrates that reliable Data Engineering requires more than moving data from one place to another.
+```text
+9 tests
+```
 
-The pipeline must explicitly define:
+The tests cover:
 
-- row grain;
-- business keys;
-- data-quality rules;
-- transaction boundaries;
-- version precedence;
-- incremental behavior;
-- retry behavior;
-- and testable guarantees.
+- duplicate business keys;
+- required fields;
+- basic business rules;
+- incremental idempotency;
+- protection against older versions;
+- late-arriving new keys;
+- input validation;
+- execution metadata;
+- transactional rollback.
+
+---
+
+## Key Concepts Practised
+
+This project consolidates several core Data Engineering concepts:
+
+- grain and business keys;
+- staging vs core data layers;
+- incremental loading;
+- business date vs update timestamp;
+- late-arriving data;
+- deduplication;
+- window functions;
+- PostgreSQL UPSERT;
+- transactions;
+- atomicity;
+- rollback;
+- idempotency;
+- modular pipeline design;
+- logging;
+- operational metadata;
+- restartability;
+- automated integration testing.
+
+---
+
+## Technology Stack
+
+- Python
+- pandas
+- PostgreSQL 17
+- psycopg
+- Docker
+- Docker Compose
+- pytest
+- python-dotenv

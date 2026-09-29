@@ -2,7 +2,7 @@ import psycopg
 import pytest
 
 from src.database import DB_CONFIG
-from src.upsert_incremental import apply_upsert
+from src.load import apply_upsert
 
 @pytest.fixture
 def db_conn():
@@ -249,3 +249,7 @@ def test_late_arriving_new_key_is_inserted(db_conn):
     assert row is not None
     assert str(row[0]) == "2026-08-01"
     assert row[1] == 2
+
+
+
+    
